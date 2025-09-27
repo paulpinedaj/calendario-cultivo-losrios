@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Calendario de Siembra - Región de Los Ríos</title>
+  <style>
+    :root {
+      --bg: #f9fafb;
+      --text: #111827;
+      --card: #fff;
+      --muted: #6b7280;
+      --pill-bg: #f3f4f6;
+      --pill-border: #e5e7eb;
+      --banner-radius: 12px;
+      --accent: #3b82f6;
+    }
+    body.dark {
+      --bg: #111827;
+      --text: #f9fafb;
+      --card: #1f2937;
+      --muted: #9ca3af;
+      --pill-bg: #374151;
+      --pill-border: #4b5563;
+    }
+
+    body {
+      margin:0;
+      font-family:Inter, system-ui, Roboto, Arial;
+      background:var(--bg);
+      color:var(--text);
+      transition:0.3s;
+    }
+
+    /* Banner */
+    .banner{
+      height:200px;
+      object-fit:cover;
+      width:100%;
+      display:block;
+    }
+
+    /* Header */
+    header{
+      text-align:center;
+      padding:15px;
+    }
+    h1{
+      margin:0;
+      font-size:24px;
+      color:var(--text);
+      line-height:1.2;
+    }
+    p{
+      color:var(--muted);
+      margin:5px 0 0;
+      font-size:14px;
+    }
+
+    /* Controles */
+    .controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      justify-content:center;
+      margin:15px auto;
+      max-width:600px;
+    }
+    .search, .btn-toggle{
+      padding:10px 14px;
+      border-radius:10px;
+      border:1px solid var(--pill-border);
+      background:var(--card);
+      color:var(--text);
+      font-size:15px;
+    }
+    .btn-toggle{cursor:pointer}
+
+    .months{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      justify-content:center;
+      margin:10px auto;
+      max-width:800px;
+    }
+    .month-btn{
+      padding:8px 12px;
+      border-radius:8px;
+      border:1px solid var(--pill-border);
+      background:var(--card);
+      cursor:pointer;
+      font-size:13px;
+      transition:0.2s;
+      color:var(--text);
+      min-width:70px;
+      text-align:center;
+    }
+    .month-btn:hover{background:var(--pill-bg);}
+    .month-btn.active{background:var(--accent);color:#fff;border-color:#2563eb}
+    .month-btn.all{background:#111;color:#fff;border-color:#000;}
+
+    .total{
+      font-size:15px;
+      text-align:center;
+      margin:10px 0;
+      color:var(--text)
+    }
+
+    /* Grid tipo dashboard */
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(2,1fr); /* en móvil siempre 2 cajas */
+      gap:12px;
+      max-width:1200px;
+      margin:0 auto;
+      padding:15px;
+    }
+    @media(min-width:768px){
+      .grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;}
+    }
+    @media(min-width:1024px){
+      .grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr));}
+    }
+
+    .card{
+      background:var(--card);
+      border-radius:14px;
+      box-shadow:0 3px 6px rgba(0,0,0,0.1);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      transition:.2s;
+    }
+    .card:hover{transform:scale(1.02)}
+    .card img{
+      width:100%;
+      height:140px;
+      object-fit:cover;
+    }
+    .card h2{
+      margin:10px 12px 4px;
+      font-size:16px;
+      color:var(--text);
+      font-weight:600;
+    }
+    .meta{
+      font-size:12px;
+      color:var(--muted);
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      margin:0 12px 8px;
+    }
+    .pill{
+      background:var(--pill-bg);
+      border:1px solid var(--pill-border);
+      padding:3px 6px;
+      border-radius:8px;
+      font-size:12px;
+    }
+    .detail{
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.4;
+      margin:0 12px 12px;
+    }
+    .mesAviso{
+      background:#dbeafe;
+      color:#1e40af;
+      font-size:12px;
+      font-weight:600;
+      padding:4px 6px;
+      border-radius:6px;
+      margin-top:6px;
+      display:inline-block
+    }
+
+    footer{
+      text-align:center;
+      color:var(--muted);
+      font-size:12px;
+      padding:15px;
+      margin-top:20px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Banner -->
+  <img class="banner" src="img/lanco.jpg" alt="Campo y huerta">
+
+  <header>
+    <h1>🌱 Calendario de Siembra</h1>
+    <p>Verduras y hortalizas para cultivar en casa<br>Región de Los Ríos, Chile</p>
+  </header>
+
+  <div class="controls">
+    <input id="q" class="search" placeholder="🔍 Buscar..." />
+    <button id="toggleMode" class="btn-toggle">🌞/🌙</button>
+  </div>
+
+  <div class="months" id="months"></div>
+  <div id="total" class="total"></div>
+
+  <main>
+    <div id="grid" class="grid"></div>
+  </main>
+
+  <footer>
+    📅 Datos basados en calendario de siembra en Chile.<br>
+    hecho por skeleton.cl
+  </footer>
+
+
+  <script>
+
+    const cultivos = [
+      {nombre:"Acelga", siembra:"Todo el año", metodo:"Directa/Almácigo", profundidad:"2 cm", germinacion:"7-9 días", trasplante:"20-40 días", distancia:"20 cm / 60 cm", cosecha:"90 días", foto:"img/productos/acelga.jpg"},
+      {nombre:"Achicoria", siembra:"Todo el año", metodo:"Directa", profundidad:"0.5 cm", germinacion:"3 días", distancia:"30 cm", cosecha:"50-70 días", foto:"https://milpa.cl/wp-content/uploads/2023/04/achicoria-corazon-de-oroo.jpg"},
+      {nombre:"Ají", siembra:"Julio-Agosto", metodo:"Almácigo", distancia:"40x45 cm", cosecha:"60-90 días", foto:"https://dojiw2m9tvv09.cloudfront.net/82906/product/aji-chileno-aji-cristal-frutas-y-verduras-frutas-verduras-ajies-63765.jpg"},
+      {nombre:"Ajo", siembra:"Abril-Agosto", metodo:"Directa", profundidad:"2-4 cm", germinacion:"10 días", distancia:"20 cm", cosecha:"180 días", foto:"https://dojiw2m9tvv09.cloudfront.net/82906/product/ajo-frutas-y-verduras-verduras-ajos-ajo-rosado0078.jpg"},
+      {nombre:"Albahaca", siembra:"Agosto-Septiembre", metodo:"Almácigo", profundidad:"0.5-1 cm", germinacion:"10-15 días", trasplante:"Septiembre-Noviembre", distancia:"25x60 cm", cosecha:"80 días", foto:"https://d26z5keclpxl8.cloudfront.net/web-dist/fotos/productos/16/jpg/albahaca_paquete_pack_100_g_9516_600x600.jpg"},
+      {nombre:"Alcachofa", siembra:"Febrero-Marzo", metodo:"Hijuelos", profundidad:"4 cm", trasplante:"Agosto", distancia:"70 cm - 1 mt", cosecha:"80-90 días", foto:"https://mercafreshperu.com/wp-content/uploads/2024/02/Alcachofa-Grande.webp"},
+      {nombre:"Apio", siembra:"Todo el año", metodo:"Almácigo", profundidad:"0.2 cm", germinacion:"15-20 días", trasplante:"70 días", distancia:"30x70 cm", cosecha:"70 días", foto:"https://i.blogs.es/f466ab/1366_2000-2-/840_560.jpg"},
+      {nombre:"Arvejas", siembra:"Mayo-Agosto", metodo:"Directa", profundidad:"2 cm", germinacion:"5-10 días", distancia:"40x40 cm", cosecha:"90 días", foto:"https://d22fxaf9t8d39k.cloudfront.net/0080fa53c8b90e421fdd2c93553a017531ce616b5d3b0de3074b70aafe9830da55869.png"},
+      {nombre:"Berenjena", siembra:"Septiembre-Diciembre", metodo:"Almácigo", profundidad:"0.5-1 cm", germinacion:"7-10 días", trasplante:"50-60 días", distancia:"40x70 cm", cosecha:"90 días", foto:"https://www.fervalle.com/wp-content/uploads/2022/07/BERENJENA.png"},
+      {nombre:"Betarraga", siembra:"Agosto-Septiembre", metodo:"Almácigo", profundidad:"2 cm", distancia:"15x30 cm", cosecha:"90 días", foto:"https://media.falabella.com/tottusCL/20067165_1/w=1500,h=1500,fit=pad"},
+      {nombre:"Brócoli", siembra:"Todo el año", metodo:"Almácigo", profundidad:"0.5-1 cm", germinacion:"8-10 días", trasplante:"30-40 días", distancia:"40 cm", cosecha:"90 días", foto:"https://d26z5keclpxl8.cloudfront.net/web-dist/fotos/productos/7/jpg/brócoli_1722_600x600.jpg"},
+      {nombre:"Coles de Bruselas", siembra:"Abril-Noviembre", metodo:"Almácigo", profundidad:"0.5-1 cm", germinacion:"8-10 días", cosecha:"150 días", foto:"https://frutonchile.cl/wp-content/uploads/2019/12/bruselas.jpg"},
+      {nombre:"Cebolla temprana", siembra:"Octubre-Febrero", metodo:"Almácigo", profundidad:"1 cm", germinacion:"8-10 días", trasplante:"20 cm", distancia:"15x25 cm", cosecha:"100 días", foto:"https://frutonchile.cl/wp-content/uploads/2019/12/cebolla-nueva.jpg"},
+      {nombre:"Cebolla tardía", siembra:"Abril", metodo:"Almácigo", profundidad:"1 cm", germinacion:"8-10 días", trasplante:"20 cm", distancia:"15x25 cm", cosecha:"100 días", foto:"https://frutonchile.cl/wp-content/uploads/2019/12/cebolla-morada.jpg"},
+      {nombre:"Cilantro", siembra:"Agosto-Septiembre", metodo:"Directa", profundidad:"2 cm", germinacion:"30 días", distancia:"2x30 cm", cosecha:"90 días", foto:"https://d26z5keclpxl8.cloudfront.net/web-dist/fotos/productos/1062/jpg/cilantro_120_g_0101_600x600.jpg"},
+      {nombre:"Coliflor", siembra:"Todo el año", metodo:"Almácigo", profundidad:"0.5-1 cm", germinacion:"5-6 días", trasplante:"90 días", distancia:"40x70 cm", cosecha:"130 días", foto:"https://redagricola.com/wp-content/uploads/2023/05/coliflor.jpg"},
+      {nombre:"Escarola", siembra:"Todo el año", metodo:"Directa/Almácigo", profundidad:"1-1.5 cm", germinacion:"8-10 días", trasplante:"20-40 días", distancia:"10x30 cm", cosecha:"90 días", foto:"https://dojiw2m9tvv09.cloudfront.net/82906/product/lechuga-escarola-frutas-y-verduras-verduras-lechugas-21360.jpg"},
+      {nombre:"Espinaca", siembra:"Todo el año", metodo:"Directa", profundidad:"1-2 cm", germinacion:"5-7 días", distancia:"15x30 cm", cosecha:"60-90 días", foto:"https://bestfruitchile.cl/wp-content/uploads/2020/05/espinaca.jpg"},
+      {nombre:"Frutilla", siembra:"Abril-Mayo", metodo:"Espolón", profundidad:"5-8 cm", distancia:"20x15 cm", cosecha:"120 días", foto:"https://frutonchile.cl/wp-content/uploads/2019/12/frutilla-2-seleccion.jpg"},
+      {nombre:"Garbanzos", siembra:"Septiembre-Octubre", metodo:"Directa", profundidad:"5-6 cm", germinacion:"10-15 días", distancia:"40x40 cm", cosecha:"110 días", foto:"https://zaandeea.com/wp-content/uploads/2021/03/Garbanzo-Seco.png"},
+      {nombre:"Habas", siembra:"Abril-Junio", metodo:"Directa", profundidad:"3-4 cm", distancia:"25x30 cm", cosecha:"90 días", foto:"https://huertafamiliar.cl/wp-content/uploads/2022/04/HABAS-1.jpeg"},
+      {nombre:"Lechuga", siembra:"Todo el año", metodo:"Directa/Almácigo", profundidad:"0.5 cm", germinacion:"7-8 días", trasplante:"20-40 días", distancia:"20x30 cm", cosecha:"90 días", foto:"https://d26z5keclpxl8.cloudfront.net/web-dist/fotos/productos/28/jpg/lechuga_costina_un_9516_600x600.jpg"},
+      {nombre:"Maíz", siembra:"Septiembre-Diciembre", metodo:"Directa", profundidad:"2-3 cm", distancia:"30x60 cm", cosecha:"120 días", foto:"https://campomarket.cl/wp-content/uploads/2025/08/107.png"},
+      {nombre:"Melón", siembra:"Septiembre-Febrero", metodo:"Directa/Almácigo", profundidad:"1-2 cm", germinacion:"3-7 días", trasplante:"30-40 días", distancia:"50x100 cm", cosecha:"120 días", foto:"https://frutonchile.cl/wp-content/uploads/2020/11/MELON-CALAMENO.jpg"},
+      {nombre:"Papa (otoño)", siembra:"Febrero-Marzo", metodo:"Directa", profundidad:"7-8 cm", germinacion:"20-40 días", distancia:"30x70 cm", cosecha:"90 días", foto:"https://elrincondelhuerto.cl/wp-content/uploads/2024/04/Diseno-sin-titulo-41.png"},
+      {nombre:"Papa (primavera)", siembra:"Agosto-Septiembre", metodo:"Directa", profundidad:"7-8 cm", germinacion:"20-40 días", distancia:"30x70 cm", cosecha:"90 días", foto:"https://d26z5keclpxl8.cloudfront.net/web-dist/fotos/productos/33/jpg/papas_1_kg_9526_600x600.jpg"},
+      {nombre:"Pepino", siembra:"Septiembre-Diciembre", metodo:"Directa/Almácigo", profundidad:"1-2 cm", germinacion:"3-7 días", trasplante:"30-40 días", distancia:"40x100 cm", cosecha:"120 días", foto:"https://frutonchile.cl/wp-content/uploads/2019/12/pepino-primera.jpg"},
+      {nombre:"Perejil", siembra:"Todo el año", metodo:"Directa", profundidad:"0.5 cm", germinacion:"20-30 días", distancia:"5x30 cm", cosecha:"90 días", foto:"https://d26z5keclpxl8.cloudfront.net/web-dist/fotos/productos/1088/jpg/perejil_4785_600x600.jpg"},
+      {nombre:"Pimiento", siembra:"Julio-Agosto", metodo:"Almácigo", profundidad:"1 cm", germinacion:"3-5 días", trasplante:"Octubre", distancia:"30x60 cm", cosecha:"90 días", foto:"https://frutonchile.cl/wp-content/uploads/2019/12/pimenton-rojo.jpg"},
+      {nombre:"Porotos", siembra:"Octubre-Enero", metodo:"Directa", profundidad:"3-5 cm", germinacion:"7-10 días", distancia:"30x50 cm", foto:"https://fullerton.cl/wp-content/uploads/2021/07/Poroto.jpg"},
+      {nombre:"Poroto verde", siembra:"Septiembre-Enero", metodo:"Directa", profundidad:"3.5 cm", germinacion:"7-8 días", distancia:"30x50 cm", cosecha:"80 días", foto:"https://frutonchile.cl/wp-content/uploads/2019/12/poroto-verde.jpg"},
+      {nombre:"Puerro", siembra:"Septiembre-Mayo", metodo:"Almácigo", profundidad:"1-2 cm", germinacion:"10-12 días", trasplante:"15-20 cm", distancia:"10x30 cm", cosecha:"120 días", foto:"https://5aldia.cl/wp-content/uploads/2021/03/puerros.jpeg"},
+      {nombre:"Quínoa", siembra:"Agosto-Septiembre", metodo:"Directa", profundidad:"2.5 cm", germinacion:"24 horas", distancia:"40 cm", cosecha:"90-125 días", foto:"https://dojiw2m9tvv09.cloudfront.net/4210/product/45154.png"},
+      {nombre:"Rabanito", siembra:"Todo el año", metodo:"Directa", profundidad:"0.5-1 cm", germinacion:"4-6 días", distancia:"5x40 cm", cosecha:"60 días", foto:"https://d26z5keclpxl8.cloudfront.net/web-dist/fotos/productos/150/jpg/rabanitos_250_g_9589_600x600.jpg"},
+      {nombre:"Repollo", siembra:"Todo el año", metodo:"Almácigo", profundidad:"0.5-1 cm", germinacion:"5-6 días", trasplante:"30-40 días", distancia:"40x60 cm", cosecha:"100 días", foto:"https://frutasyverdurashuechuraba.cl/wp-content/uploads/2017/09/repolloV.jpeg"},
+      {nombre:"Sandía", siembra:"Septiembre-Febrero", metodo:"Directa/Almácigo", profundidad:"2-3 cm", germinacion:"6-8 días", trasplante:"30-40 días", distancia:"50x100 cm", cosecha:"120 días", foto:"https://frutonchile.cl/wp-content/uploads/2020/11/sandia-scaled.jpg"},
+      {nombre:"Tomate", siembra:"Agosto-Septiembre", metodo:"Almácigo", profundidad:"0.5-1 cm", germinacion:"5-8 días", trasplante:"Noviembre-Diciembre", distancia:"50x100 cm", cosecha:"90 días", foto:"https://lavegaapp.cl/wp-content/uploads/2020/06/Tomates_Productos_LaVegaApp.jpg"},
+      {nombre:"Zanahoria", siembra:"Todo el año", metodo:"Directa", profundidad:"1-2 cm", germinacion:"12-15 días", distancia:"5x20 cm", cosecha:"120 días", foto:"https://upload.wikimedia.org/wikipedia/commons/4/4b/Carrots.jpg", foto:"https://www.vegetables.bayer.com/content/dam/bayer-vegetables/product-photography/carrot/zanahoria%20abaco%20chile3%20600x600.jpg"},
+      {nombre:"Zapallo italiano", siembra:"Septiembre-Enero", metodo:"Directa/Almácigo", profundidad:"2 cm", germinacion:"5-10 días", trasplante:"30-40 días", distancia:"80x100 cm", cosecha:"100 días", foto:"https://hortalistas.cl/wp-content/uploads/2019/12/zapallo-italiano-600x600-600x600.jpg"},
+      {nombre:"Zapallo camote", siembra:"Septiembre-Diciembre", metodo:"Directa", profundidad:"2 cm", germinacion:"5-10 días", distancia:"1x2 mt", cosecha:"200 días", foto:"https://cugat.cl/wp-content/uploads/2022/04/2541039000008.png"}
+    ];
+
+
+    const meses=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+    const grid=document.getElementById('grid');
+    const q=document.getElementById('q');
+    const monthsDiv=document.getElementById('months');
+    const totalDiv=document.getElementById('total');
+    let filtroMes="";
+
+    // Botón "Todo el año"
+    const allBtn=document.createElement('button');
+    allBtn.className='month-btn all';
+    allBtn.textContent='Todo el año';
+    allBtn.addEventListener('click',()=>{
+      document.querySelectorAll('.month-btn').forEach(b=>b.classList.remove('active'));
+      allBtn.classList.add('active');
+      filtroMes='todo el año';
+      applyFilters();
+    });
+    monthsDiv.appendChild(allBtn);
+
+    // Crear botones de meses
+    meses.forEach((m)=>{
+      const btn=document.createElement('button');
+      btn.className='month-btn';
+      btn.textContent=m.charAt(0).toUpperCase()+m.slice(1);
+      btn.addEventListener('click',()=>{
+        document.querySelectorAll('.month-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        filtroMes=m;
+        applyFilters();
+      });
+      monthsDiv.appendChild(btn);
+    });
+
+    function render(list){
+      grid.innerHTML='';
+      if(list.length===0){
+        grid.innerHTML='<div style="grid-column:1/-1;color:var(--muted)">No hay resultados.</div>';
+        totalDiv.textContent="0 resultados";
+        return;
+      }
+      list.forEach(c=>{
+        const hoy=new Date();
+        const mesActual=hoy.toLocaleString('es-CL',{month:'long'}).toLowerCase();
+        const aviso=c.siembra.toLowerCase().includes(mesActual)?`<div class='mesAviso'>📌 ¡Se puede sembrar este mes!</div>`:'';
+        const card=document.createElement('div');
+        card.className='card';
+        card.innerHTML=`
+          <img src="${c.foto||'https://via.placeholder.com/400x200?text=Imagen'}" alt="${c.nombre}">
+          <h2>${c.nombre}</h2>
+          <div class="meta">
+            <div class="pill">🌱 Siembra: ${c.siembra}</div>
+            <div class="pill">⏳ Germinación: ${c.germinacion||'—'}</div>
+            <div class="pill">🌾 Cosecha: ${c.cosecha||'—'}</div>
+          </div>
+          <div class="detail">
+            <strong>Método:</strong> ${c.metodo || '—'}<br>
+            <strong>Profundidad:</strong> ${c.profundidad || '—'}<br>
+            <strong>Trasplante:</strong> ${c.trasplante || '—'}<br>
+            <strong>Distancia:</strong> ${c.distancia || '—'}
+            ${aviso}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+      totalDiv.textContent=`${list.length} resultado${list.length!==1?'s':''}`;
+    }
+
+    function applyFilters(){
+      const qv=q.value.trim().toLowerCase();
+      let result=cultivos.filter(c=>{
+        let ok=true;
+        if(qv){ok=(c.nombre.toLowerCase().includes(qv)||c.siembra.toLowerCase().includes(qv));}
+        if(filtroMes){
+          if(filtroMes==='todo el año'){ok=ok && c.siembra.toLowerCase().includes('todo el año');}
+          else{ok=ok && c.siembra.toLowerCase().includes(filtroMes);}
+        }
+        return ok;
+      });
+      render(result);
+    }
+
+    // Aplicar filtro del mes actual al cargar
+    window.addEventListener('load',()=>{
+      const hoy=new Date();
+      filtroMes=hoy.toLocaleString('es-CL',{month:'long'}).toLowerCase();
+      document.querySelectorAll('.month-btn').forEach(b=>{
+        if(b.textContent.toLowerCase()===filtroMes)b.classList.add('active');
+      });
+      applyFilters();
+    });
+
+    q.addEventListener('input',applyFilters);
+
+    // Toggle día/noche
+    const toggleBtn=document.getElementById('toggleMode');
+    toggleBtn.addEventListener('click',()=>{
+      document.body.classList.toggle('dark');
+    });
+  </script>
+</body>
+</html>
+
+
